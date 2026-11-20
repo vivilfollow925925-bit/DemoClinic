@@ -3,7 +3,7 @@ import sys,tempfile,copy,json
 p=Path(__file__).resolve().parents[1];sys.path.insert(0,str(p/'implementation'))
 import task_queue as tq
 root=Path(tempfile.mkdtemp(prefix='task_graph_tests_'))
-def card(n,deps,ref):return {'id':f'T{n}','title':f'能力{n}','goal':'执行一个可观察流程','success_criteria':'应出现预期结果','setup':'从初始页面建立测试状态','dimensions':[4],'depends_on':deps,'dependency_reason':'必须先建立前置状态' if deps else '', 'requirement_indices':[ref]}
+def card(n,deps,ref):return {'id':f'T{n}','title':f'能力{n}','goal':'执行一个可观察流程','success_criteria':'应出现预期结果','setup':'从初始页面建立测试状态','scope':'Only the assigned capability', 'preconditions':['Fresh browser'], 'test_inputs':[{'name':'input','value_or_rule':'No input needed'}], 'steps':[{'action':'Observe the assigned capability','input':'None','expected_result':'Matches task success criterion'}], 'completion_criteria':['Record a real browser check'], 'blocking_conditions':['Required page unavailable'], 'dimensions':[4],'depends_on':deps,'dependency_reason':'必须先建立前置状态' if deps else '', 'requirement_indices':[ref]}
 plan={'tasks':[card(1,[],1),card(2,['T1'],1),card(3,['T2'],1),card(4,[],2)],'out_of_scope':[]}
 plan=tq.validate_plan(plan,2)
 assert [t['layer'] for t in plan['tasks']]==[0,1,2,0]

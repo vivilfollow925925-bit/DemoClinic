@@ -247,6 +247,9 @@ def test_agent(session, config, persona=None):
         skill.read({'topic':'dimension','dimensions':task['dimensions']})
         system += ('\n只执行当前任务卡，不自行扩展到整个项目。前置任务成功不表示当前浏览器已准备好数据：'
                    '当前是独立副本和全新浏览器，必须按setup建立前置状态。父任务页面记忆只是线索，操作前核对当前控件。'
+                   '先核对scope和preconditions，按test_inputs准备数据，依steps逐项执行并检查expected_result。'
+                   '选择器必须根据当前页面确定，不盲信源码线索。遇blocking_conditions停止并说明原因，不新报后续缺陷。'
+                   'completion_criteria每项都需实际检查证据，漏项不能通过；测试预期与用户约定冲突时标明不确定，不擅自改标准。'
                    '完成后finish必须给outcome和证明本卡成功标准的check_ids；未完成或证据不足不能passed。'
                    '如前置能力再次异常，只记录受阻和证据，不把同一前置故障改名报成新的后续故障。')
     messages=[{'role':'system','content':system},{'role':'user','content':json.dumps({

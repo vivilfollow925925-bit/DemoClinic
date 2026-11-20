@@ -3,7 +3,7 @@ from unittest.mock import patch
 P=pathlib.Path(__file__).resolve().parents[1];sys.path.insert(0,str(P/'implementation'))
 import workflow_engine as w,browser_worker as bw,task_queue as tq
 root=pathlib.Path(tempfile.mkdtemp(prefix='layered_e2e_'));src=root/'source';src.mkdir();(src/'index.html').write_text('<title>Queue fixture</title><h1>Independent page</h1><button id="gate" disabled>Start</button>',encoding='utf-8')
-def card(i,deps,ref):return {'id':f'T{i}','title':f'Task {i}','goal':'Check a capability','success_criteria':'UI matches requested criterion','setup':'Open a fresh page','dimensions':[4],'depends_on':deps,'dependency_reason':'Requires preceding capability' if deps else '', 'requirement_indices':[ref]}
+def card(i,deps,ref):return {'id':f'T{i}','title':f'Task {i}','goal':'Check a capability','success_criteria':'UI matches requested criterion','setup':'Open a fresh page','scope':'Only the assigned capability', 'preconditions':['Fresh browser'], 'test_inputs':[{'name':'input','value_or_rule':'No input needed'}], 'steps':[{'action':'Observe the assigned capability','input':'None','expected_result':'Matches task success criterion'}], 'completion_criteria':['Record a real browser check'], 'blocking_conditions':['Required page unavailable'], 'dimensions':[4],'depends_on':deps,'dependency_reason':'Requires preceding capability' if deps else '', 'requirement_indices':[ref]}
 plan={'tasks':[card(1,[],1),card(2,['T1'],1),card(3,[],2)],'out_of_scope':[]}
 def call(name,args):return {'id':name,'type':'function','function':{'name':name,'arguments':json.dumps(args,ensure_ascii=False)}}
 class Fake:
