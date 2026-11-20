@@ -21,22 +21,26 @@ DemoClinic 是面向 Web Demo 的 AI 体验与修复工作流。分析 Agent 根
 ## 工作原理
 
 ```mermaid
+%%{init: {"flowchart": {"htmlLabels": false}}}%%
 flowchart TD
-    A[上传源码 ZIP 与项目资料] --> B[解压到本地副本并启动网页]
-    B --> C[分析 Agent：生成分层任务卡]
-    C --> D[Python：检查依赖并分配任务]
-    D --> E[体验 Agents：浏览器操作与证据记录]
-    E --> F{前置任务通过？}
-    F -->|通过| D
-    F -->|失败或未确认| G[阻塞依赖任务，独立任务继续]
-    E --> H[汇总问题卡片并独立复现]
-    H --> I[Python 生成 HTML 报告]
-    H --> J[用户选择问题编号]
-    J --> K[修复 Agent：修改项目副本]
-    K --> L[Python + Playwright：复测与回归]
-    L --> M[接受通过的修改，继续下一项]
-    M --> N[更新报告并导出项目 ZIP]
+    A[提交项目] --> B[启动网页]
+    B --> C[分析：规划任务]
+    C --> D[程序：按依赖分发]
+    D --> E[体验：操作并检查]
+    E --> F{任务通过？}
+    F -->|是| D
+    F -->|否| G[阻塞依赖任务]
+    E --> H[汇总并复现问题]
+    H --> I[生成体验报告]
+    H --> J[用户选择问题]
+    J --> K[修复：修改代码]
+    K --> L[程序：逐项复测]
+    L --> M[保留通过的修改]
+    M --> N[导出报告与项目]
 ```
+
+图中“分析、体验、修复”对应三路独立模型 API；程序负责分发、判断、报告排版与导出。前置失败时只阻塞依赖它的任务，其他独立任务继续执行。
+
 
 分析 Agent 负责决定“应该测什么”；体验 Agent 负责执行任务并记录证据；修复 Agent 负责修改源码。Python 负责调度、校验、报告排版和文件导出。它们不依赖模型平台自带的“子代理”功能。
 
@@ -80,7 +84,7 @@ python -m venv .venv
 | 1–2 | 解包工作流实现，准备浏览器依赖。 |
 | 3 | 检查模型、预算和检查规范；通常只需调整模型接口及运行限制。 |
 | 4 | 上传 Demo ZIP、填写项目资料，点击提交，等待“提交成功”。 |
-| 5–6 | 输入两类 Agent 的 API Key，检查接口连接。 |
+| 5–6 | 分别输入分析、体验、修复的 API Key，检查三路接口连接。 |
 | 7 | 启动项目并展示首页截图，确认 Demo 能正常打开。 |
 | 8 | 分析项目、生成分层任务卡，由 Python 分发给体验 Agent。 |
 | 9 | 汇总问题并独立复现，生成第一版 HTML 报告。 |
@@ -130,9 +134,10 @@ DemoClinic运行目录/
 
 | 参数 | 当前默认值 | 作用 |
 | --- | --- | --- |
-| `test_model` | `glm-5.3-flash` | 项目分析与体验使用的模型。 |
+| `analysis_model` | `glm-5.3` | 生成分层任务卡，使用独立分析接口与 Key。 |
+| `test_model` | `glm-5.3-flash` | 执行浏览器体验任务。 |
 | `fix_model` | `glm-5.3` | 源码修复使用的模型。 |
-| `test_base_url` / `fix_base_url` | 智谱 API 地址 | 两类模型可分别配置接口。 |
+| `analysis_base_url` / `test_base_url` / `fix_base_url` | 智谱 API 地址 | 三路模型可分别配置接口。 |
 | `vision` | `True` | 向体验模型提供页面截图；接口必须支持图像。 |
 | `experience_workers` | `2` | 独立体验任务的并发数；网址模式或固定端口会降为串行。 |
 | `max_analysis_tasks` | `12` | 分析阶段最多生成的任务卡数量。 |
@@ -141,6 +146,14 @@ DemoClinic运行目录/
 | `MAX_FIX_TURNS` | `14` | 每张待修问题卡的模型调用上限。 |
 | `history_batches` | `2` | 常规调用携带的近期工具历史数量。 |
 | `generate_report_content` | `False` | 默认由 Python 渲染报告，不额外调用报告模型。 |
+
+三路各自配置 `provider`、`base_url` 和 `model`，第 5 步分别输入 Key。可以复用一个有权限的 Key；想在供应商后台也按角色查看用量，可创建三个独立 Key（取决于平台是否支持按 Key 查询）。仅体验并出报告时不要求修复 Key。
+
+### 分别查看 API 用量
+
+第 6、8、10、11 步会显示分析、体验、修复各自的响应次数、输入 token、输出 token 与合计。`api_usage_summary.json` 保存三路累计统计，第 12 步一起导出；`summary.json` 的 `usage_by_role` 也包含该汇总。
+
+统计范围为**本轮运行目录内的全部已记录调用**，包括连接检查和重复执行的批次；重新生成报告不会重复累计。模型相同、Key 相同仍按角色分别计数。统计以 API 返回的 `usage` 为准，未返回完整用量的响应会明确标记；失败请求和自动重试的实际收费以供应商账单为准。旧版记录不追溯重分类，比较三路用量请从新版工作流创建新一轮运行。
 
 默认型号只是当前配置，请以自己的平台实际可用型号为准。第 6 步连接成功只说明文本接口有响应，不代表截图、工具调用或完整测试已验证成功。
 
@@ -178,11 +191,13 @@ DemoClinic/
 本地检查：
 
 ```powershell
+.\.venv\Scripts\python.exe tests/test_api_roles.py
 .\.venv\Scripts\python.exe tests/test_task_queue.py
 .\.venv\Scripts\python.exe tests/test_selected_repairs.py
 .\.venv\Scripts\python.exe tests/test_layered_e2e.py
 ```
 
+- API 测试：三路地址、型号与 Key 独立路由，密钥不串用，角色用量累计和缺失标记。
 - 调度测试：依赖环、无效引用、证据门槛、阻塞传播与预算耗尽。
 - 修复测试：用户选择、顺序执行、失败候选排除与已有成功修改保留。
 - 浏览器集成测试：临时生成通用测试页面，使用真实 Chromium 和模拟模型响应，验证分析 → 调度 → 体验 → 复现 → HTML 链路。

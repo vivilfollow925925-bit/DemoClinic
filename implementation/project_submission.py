@@ -208,7 +208,7 @@ def export_project(run, config, repair, verification):
             if excluded(rel.parts):continue
             actual=source/rel if (source/rel).is_file() else p
             z.write(actual,rel.as_posix())
-    for filename in ('体验与修复报告.html','修复问题单.json','changes.diff','verification.json','summary.json'):
+    for filename in ('体验与修复报告.html','修复问题单.json','changes.diff','verification.json','summary.json','api_usage_summary.json'):
         if (run/filename).is_file():shutil.copy2(run/filename,dest/filename)
     notes=['项目：'+config['submission']['project_name'],
            '状态：'+('所选修复通过已有检查，不代表整个产品无缺陷' if verified else

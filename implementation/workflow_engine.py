@@ -17,12 +17,52 @@ def dump(path, obj):
 def load(path):
     return json.loads(Path(path).read_text(encoding='utf-8'))
 
+
+def usage_summary(run_dir, config):
+    """All logged calls in this run, including connection checks and repeated batches."""
+    rows = {role: {'model': config.get(role + '_model', ''), 'models': [],
+        'requests': 0, 'prompt_tokens': 0, 'completion_tokens': 0,
+        'missing_usage_responses': 0, 'errors': 0}
+        for role in ('analysis', 'test', 'fix')}
+    for path in Path(run_dir).rglob('*usage.jsonl'):
+        for line in path.read_text(encoding='utf-8').splitlines():
+            try: record = json.loads(line)
+            except ValueError: continue
+            row = rows.get(record.get('role'))
+            if row is None: continue
+            model = record.get('model', '')
+            if model and model not in row['models']: row['models'].append(model)
+            if record.get('status') != 'response':
+                row['errors'] += 1
+                continue
+            row['requests'] += 1
+            usage = record.get('usage') or {}
+            if not all(k in usage for k in ('prompt_tokens', 'completion_tokens')):
+                row['missing_usage_responses'] += 1
+            for k in ('prompt_tokens', 'completion_tokens'):
+                row[k] += usage.get(k, 0) or 0
+    for row in rows.values(): row['total_tokens'] = row['prompt_tokens'] + row['completion_tokens']
+    dump(Path(run_dir) / 'api_usage_summary.json', rows)
+    return rows
+
+
+def show_usage(run_dir, config):
+    rows = usage_summary(run_dir, config)
+    print('本轮累计 API 用量（含连接检查和本目录内的重复运行）：')
+    for role, label in [('analysis','分析'), ('test','体验'), ('fix','修复')]:
+        row = rows[role]
+        print(f"{label}：响应 {row['requests']} 次；输入 {row['prompt_tokens']}；输出 {row['completion_tokens']}；合计 {row['total_tokens']} tokens")
+        if row['missing_usage_responses']: print('  部分响应未提供完整用量，合计可能偏低。')
+    print('统计依据为 API 返回的用量；失败请求及重试的实际账单以平台为准。')
+    return rows
+
+
 def say(message):
     print(time.strftime('%H:%M:%S'), message, flush=True)
 
 def redact(text):
     text = str(text)
-    for name in ('DEMO_TEST_KEY', 'DEMO_FIX_KEY'):
+    for name in ('DEMO_ANALYSIS_KEY', 'DEMO_TEST_KEY', 'DEMO_FIX_KEY'):
         key = os.environ.get(name, '')
         if key: text = text.replace(key, '[密钥已隐藏]')
     return text
@@ -30,13 +70,13 @@ def redact(text):
 class ModelClient:
     """Role-specific OpenAI-compatible endpoints and in-memory credentials."""
     def __init__(self, config, role):
-        if role not in ('test', 'fix'): raise ValueError('模型角色必须为 test 或 fix')
+        if role not in ('analysis', 'test', 'fix'): raise ValueError('模型角色必须为 analysis、test 或 fix')
         self.config, self.role = config, role
         self.provider = config.get(role + '_provider', config.get('provider', 'openai_compatible'))
         self.base_url = config.get(role + '_base_url', config.get('base_url', ''))
         self.model = config[role + '_model']
         if not self.base_url: raise ValueError(f'请配置 {role}_base_url')
-        self.key = os.environ.get('DEMO_TEST_KEY' if role == 'test' else 'DEMO_FIX_KEY', '')
+        self.key = os.environ.get({'analysis':'DEMO_ANALYSIS_KEY','test':'DEMO_TEST_KEY','fix':'DEMO_FIX_KEY'}[role], '')
         if not self.key: raise RuntimeError('请先运行 Notebook 的密钥输入单元格。')
         self.usage = {'requests': 0, 'prompt_tokens': 0, 'completion_tokens': 0}
 
@@ -147,7 +187,7 @@ class RunningTarget:
     def __enter__(self):
         if not self.target['command']: return self.target['url']
         self.log = open(Path(self.target['folder']) / 'server.log', 'w', encoding='utf-8')
-        env = {k: v for k, v in os.environ.items() if k not in ('DEMO_TEST_KEY', 'DEMO_FIX_KEY')}
+        env = {k: v for k, v in os.environ.items() if k not in ('DEMO_ANALYSIS_KEY', 'DEMO_TEST_KEY', 'DEMO_FIX_KEY')}
         env.update(self.target['env'])
         try:
             if self.target.get('setup_command'):
@@ -188,6 +228,7 @@ def worker(job, folder, config, credentials=True):
     dump(folder / 'job.json', {'config': config, **job})
     env = os.environ.copy(); env['PYTHONIOENCODING'] = 'utf-8'
     env['PYTHONUNBUFFERED'] = '1'
+    env.pop('DEMO_ANALYSIS_KEY', None)
     if not credentials:
         env.pop('DEMO_TEST_KEY', None); env.pop('DEMO_FIX_KEY', None)
     else:
@@ -715,10 +756,11 @@ def render_report(run_dir, config, baseline, issues, repair_result=None, verific
     css = """*{box-sizing:border-box}body{margin:0;background:#f4f6f9;color:#25344a;font:16px/1.75 system-ui,'Microsoft YaHei',sans-serif}main{max-width:940px;margin:auto;padding:48px 24px}header{margin-bottom:28px}h1{font-size:32px;line-height:1.35;margin:12px 0}h2{font-size:22px;margin:28px 0 14px}h3{font-size:19px;margin:8px 0}p{margin:10px 0}.eyebrow,.issue-meta{font-size:13px;letter-spacing:.06em;color:#61748b}.subtitle,.muted,footer{color:#64748b}.badge{display:inline-block;background:#e8eef8;padding:6px 14px;border-radius:8px}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.metrics div,section{background:white;border:1px solid #e0e6ed;border-radius:14px;padding:22px}.metrics b{font-size:30px;display:block}.metrics span{color:#64748b;font-size:14px}section{margin:18px 0}section h2{margin-top:0}.state{font-weight:600;color:#245c7a}ul{padding-left:22px}details{border-top:1px solid #e4e9ef;margin-top:18px;padding-top:12px}summary{cursor:pointer;color:#365d85}img{max-width:100%;height:auto;border:1px solid #e0e6ed}figure{margin:14px 0}figcaption{font-size:13px;color:#64748b}footer{font-size:13px;margin-top:28px}@media(max-width:600px){main{padding:24px 16px}h1{font-size:25px}section,.metrics div{padding:16px}.metrics{gap:8px}.metrics b{font-size:25px}}"""
     document = '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title><style>'+css+'</style></head><body><main>'+''.join(content)+'</main></body></html>'
     path=run_dir/'体验与修复报告.html';path.write_text(document,encoding='utf-8')
+    role_usage = usage_summary(run_dir, config)
     dump(run_dir / 'summary.json', {'run': run_dir.name, 'issue_count': len(issues),
         'confirmed': sum(i['status'] == '已复现（按所填预期）' for i in issues),
         'repair_status': status, 'baseline_usage': [b.get('usage') for b in baseline],
-        'repair_usage': (repair_result or {}).get('usage')})
+        'repair_usage': (repair_result or {}).get('usage'), 'usage_by_role': role_usage})
     dump(run_dir / '修复问题单.json', {
         'requirements':config['requirements'], 'mode':config['mode'],
         'automatic_repair_enabled':bool(config.get('repair_enabled',False)),
@@ -736,7 +778,7 @@ def export_delivery(run_dir, notebook_path=None):
     import zipfile
     run_dir = Path(run_dir); target = run_dir / '组委会交付包.zip'
     with zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED) as z:
-        for name in ('体验与修复报告.html', 'summary.json', 'baseline.json', 'issues.json',
+        for name in ('体验与修复报告.html', 'summary.json', 'api_usage_summary.json', 'baseline.json', 'issues.json',
                      'repair.json', 'verification.json', 'changes.diff', 'config.json', '体验规范_本轮快照.md', '修复问题单.json', '修复规范_本轮快照.md', 'task_plan.json', 'task_state.json'):
             if (run_dir / name).exists(): z.write(run_dir / name, 'results/' + name)
         # Candidate contains only selected source files, never diaries or process logs.
