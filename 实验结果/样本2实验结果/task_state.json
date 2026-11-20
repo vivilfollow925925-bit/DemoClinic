@@ -1,0 +1,66 @@
+{
+  "tasks": {
+    "T01": {
+      "status": "passed",
+      "blocked_by": [],
+      "result_file": "D:\\Thu\\3_Projects\\8_Demo体验工作流\\DemoClinic运行目录\\outputs\\20261120_154516_575d8\\experience_execution_f8404301f41f4dd787c731bb5069d7e3\\T01\\result.json"
+    },
+    "T02": {
+      "status": "failed",
+      "blocked_by": [],
+      "result_file": "D:\\Thu\\3_Projects\\8_Demo体验工作流\\DemoClinic运行目录\\outputs\\20261120_154516_575d8\\experience_execution_f8404301f41f4dd787c731bb5069d7e3\\T02\\result.json"
+    },
+    "T03": {
+      "status": "passed",
+      "blocked_by": [],
+      "result_file": "D:\\Thu\\3_Projects\\8_Demo体验工作流\\DemoClinic运行目录\\outputs\\20261120_154516_575d8\\experience_execution_f8404301f41f4dd787c731bb5069d7e3\\T03\\result.json"
+    },
+    "T04": {
+      "status": "error",
+      "blocked_by": [],
+      "result_file": "D:\\Thu\\3_Projects\\8_Demo体验工作流\\DemoClinic运行目录\\outputs\\20261120_154516_575d8\\experience_execution_f8404301f41f4dd787c731bb5069d7e3\\T04\\result.json"
+    },
+    "T05": {
+      "status": "error",
+      "blocked_by": [],
+      "result_file": "D:\\Thu\\3_Projects\\8_Demo体验工作流\\DemoClinic运行目录\\outputs\\20261120_154516_575d8\\experience_execution_f8404301f41f4dd787c731bb5069d7e3\\T05\\result.json"
+    },
+    "T06": {
+      "status": "not_run",
+      "blocked_by": [],
+      "reason": "达到30分钟阶段时间上限"
+    },
+    "T07": {
+      "status": "not_run",
+      "blocked_by": [],
+      "reason": "达到30分钟阶段时间上限"
+    },
+    "T08": {
+      "status": "not_run",
+      "blocked_by": [],
+      "reason": "达到30分钟阶段时间上限"
+    },
+    "T09": {
+      "status": "not_run",
+      "blocked_by": [],
+      "reason": "达到30分钟阶段时间上限"
+    },
+    "T10": {
+      "status": "not_run",
+      "blocked_by": [],
+      "reason": "达到30分钟阶段时间上限"
+    },
+    "T11": {
+      "status": "not_run",
+      "blocked_by": [],
+      "reason": "达到30分钟阶段时间上限"
+    },
+    "T12": {
+      "status": "not_run",
+      "blocked_by": [],
+      "reason": "达到30分钟阶段时间上限"
+    }
+  },
+  "remaining_seconds": 0,
+  "status": "finished"
+}

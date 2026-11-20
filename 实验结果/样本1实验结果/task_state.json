@@ -1,0 +1,72 @@
+{
+  "tasks": {
+    "T01": {
+      "status": "passed",
+      "blocked_by": [],
+      "result_file": "D:\\Thu\\3_Projects\\8_Demo体验工作流\\DemoClinic运行目录\\outputs\\20261120_131925_e9327\\experience_execution_6d6325a167454ce9ae34926bcdaa0dfd\\T01\\result.json"
+    },
+    "T02": {
+      "status": "error",
+      "blocked_by": [],
+      "result_file": "D:\\Thu\\3_Projects\\8_Demo体验工作流\\DemoClinic运行目录\\outputs\\20261120_131925_e9327\\experience_execution_6d6325a167454ce9ae34926bcdaa0dfd\\T02\\result.json"
+    },
+    "T03": {
+      "status": "error",
+      "blocked_by": [],
+      "result_file": "D:\\Thu\\3_Projects\\8_Demo体验工作流\\DemoClinic运行目录\\outputs\\20261120_131925_e9327\\experience_execution_6d6325a167454ce9ae34926bcdaa0dfd\\T03\\result.json"
+    },
+    "T04": {
+      "status": "not_run",
+      "blocked_by": [],
+      "reason": "达到30分钟阶段时间上限"
+    },
+    "T05": {
+      "status": "not_run",
+      "blocked_by": [],
+      "reason": "达到30分钟阶段时间上限"
+    },
+    "T06": {
+      "status": "blocked",
+      "blocked_by": [
+        "T04"
+      ],
+      "reason": "前置任务未通过，未执行，不新增产品缺陷"
+    },
+    "T07": {
+      "status": "not_run",
+      "blocked_by": [],
+      "reason": "达到30分钟阶段时间上限"
+    },
+    "T08": {
+      "status": "blocked",
+      "blocked_by": [
+        "T07"
+      ],
+      "reason": "前置任务未通过，未执行，不新增产品缺陷"
+    },
+    "T09": {
+      "status": "not_run",
+      "blocked_by": [],
+      "reason": "达到30分钟阶段时间上限"
+    },
+    "T10": {
+      "status": "blocked",
+      "blocked_by": [
+        "T09"
+      ],
+      "reason": "前置任务未通过，未执行，不新增产品缺陷"
+    },
+    "T11": {
+      "status": "not_run",
+      "blocked_by": [],
+      "reason": "达到30分钟阶段时间上限"
+    },
+    "T12": {
+      "status": "not_run",
+      "blocked_by": [],
+      "reason": "达到30分钟阶段时间上限"
+    }
+  },
+  "remaining_seconds": 0,
+  "status": "finished"
+}
